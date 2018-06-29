@@ -1,0 +1,16 @@
+AUTHORS.rst
+LICENSE
+MANIFEST.in
+README.rst
+setup.cfg
+setup.py
+django_saml2_auth/__init__.py
+django_saml2_auth/urls.py
+django_saml2_auth/views.py
+django_saml2_auth.egg-info/PKG-INFO
+django_saml2_auth.egg-info/SOURCES.txt
+django_saml2_auth.egg-info/dependency_links.txt
+django_saml2_auth.egg-info/requires.txt
+django_saml2_auth.egg-info/top_level.txt
+django_saml2_auth/templates/django_saml2_auth/denied.html
+django_saml2_auth/templates/django_saml2_auth/signout.html
