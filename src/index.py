@@ -77,15 +77,23 @@ async def scrape_spell():
 async def scrape_background():
     browser = await launch(headless=False)
     page = await browser.newPage()
+
+    # page.setDefaultNavigationTimeout(0)
+
     await page.goto("http://engl393-dnd5th.wikia.com/wiki/Backgrounds")
     doc = await page.querySelector("#mw-content-text > table > tbody")
     if doc:
         plinth = await page.evaluate("(element) => element.innerHTML", doc)
         soup = BeautifulSoup(plinth, "html.parser")
         bgs = []
+        backgrounds = {}
         for link in soup.find_all('a'):
             bgs.append(link.get('href'))
-        links = bgs[::2]
+        raw_links = bgs[::2]
+        links = []
+        for item in raw_links:
+            if "#Guild_Merchant" not in item:
+                links.append(item)
         for item in links:
             await page.goto("http://engl393-dnd5th.wikia.com" + str(item))
             bg_doc = await page.querySelector("#mw-content-text")
@@ -94,11 +102,31 @@ async def scrape_background():
                 txt = await page.evaluate("(element) => element.innerHTML", bg_doc)
                 ind = BeautifulSoup(txt, "html.parser")
                 features = []
+                ind_bg = {}
                 for line in ind.find_all('li'):
-                    features.append(line.text)
+                    sentence = line.text
+                    if sentence[:-1] == ".":
+                        sentence = sentence[:-1]
+                    if ":" in sentence or "." in sentence:
+                        features.append(sentence.replace(".", ":"))
                 for thing in features:
-                    print(name + ": " + thing)
-
+                    if "^" not in thing:
+                        for lit in thing:
+                            if lit[:-1] == "n" and lit[:-2] == "\\":
+                                thing = thing[:-2]
+                        dope = thing.split(":")
+                        ind_bg[dope[0]] = dope[1]
+                subsect = ""
+                for line in ind.find_all("span"):
+                    if "Feature" in line.text:
+                        subsect += line.text
+                    try:
+                        featurebag = subsect.split(":")
+                        ind_bg[featurebag[0]] = featurebag[1]
+                    except IndexError:
+                        pass
+                backgrounds[name] = ind_bg
+            print(str(backgrounds).replace("\n", ""))
     else:
         print("not working")
 
@@ -106,4 +134,4 @@ async def scrape_background():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     # loop.run_until_complete(scrape_spell())
-    loop.run_until_complete(scrape_background())
+    # loop.run_until_complete(scrape_background())
