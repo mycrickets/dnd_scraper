@@ -1,6 +1,7 @@
 import asyncio
 
 from pyppeteer import launch
+from bs4 import BeautifulSoup
 
 
 async def scrape_spell():
@@ -79,54 +80,25 @@ async def scrape_background():
     await page.goto("http://engl393-dnd5th.wikia.com/wiki/Backgrounds")
     doc = await page.querySelector("#mw-content-text > table > tbody")
     if doc:
-        plinth = await page.evaluate("(element) => element.innerText", doc)
-        plinth = plinth.replace("\t", " ")
-        broken = plinth.split("\n")
-        bg_dict = {}
-        for item in broken[0:len(broken)-1]:
-            print(str(item))
-            item = item.split(" ")
-            i = 0
-            name = item[i]
-            i += 1
-            while True:
-                if item[i] in ["SCAG", "RoD", "PHB", "EE", "PS:A", "PS:In", "CoS", "ToA"]:
-                    i += 1
-                    break
-                name += " " + item[i]
-                i += 1
-            if item[i] == "(AL":
-                i += 2
-            skill = ""
-            counter = 0
-            while True:
-                skill += " " + item[i]
-                if item[i][len(item[i])-1] in [")", ","]:
-                    counter += 1
-                if counter == 2:
-                    break
-                i += 1
-            i += 1
-            language = item[i]
-            i += 1
-            if language == "Any":
-                for j in range(1, int(item[i][len(item[i])-1])):
-                    language += " Any"
-            i += 1
-            tool = ""
-            try:
-                while item[i]:
-                    tool += " " + item[i]
-                    i += 1
-            except IndexError:
-                pass
-            print(name)
-            print(skill)
-            print(language)
-            print(tool)
-            bg = {'name': name, 'skill': skill, 'languages': language, 'tool': tool}
-            bg_dict[name] = bg
-        print(bg_dict)
+        plinth = await page.evaluate("(element) => element.innerHTML", doc)
+        soup = BeautifulSoup(plinth, "html.parser")
+        bgs = []
+        for link in soup.find_all('a'):
+            bgs.append(link.get('href'))
+        links = bgs[::2]
+        for item in links:
+            await page.goto("http://engl393-dnd5th.wikia.com" + str(item))
+            bg_doc = await page.querySelector("#mw-content-text")
+            name = item.replace("/wiki/", "")
+            if bg_doc:
+                txt = await page.evaluate("(element) => element.innerHTML", bg_doc)
+                ind = BeautifulSoup(txt, "html.parser")
+                features = []
+                for line in ind.find_all('li'):
+                    features.append(line.text)
+                for thing in features:
+                    print(name + ": " + thing)
+
     else:
         print("not working")
 
