@@ -3,7 +3,7 @@ import asyncio
 from pyppeteer import launch
 
 
-async def main():
+async def scrape_spell():
     browser = await launch(headless=False)
     page = await browser.newPage()
     await page.goto("https://donjon.bin.sh/5e/spells/")
@@ -73,6 +73,65 @@ async def main():
     await browser.close()
 
 
+async def scrape_background():
+    browser = await launch(headless=False)
+    page = await browser.newPage()
+    await page.goto("http://engl393-dnd5th.wikia.com/wiki/Backgrounds")
+    doc = await page.querySelector("#mw-content-text > table > tbody")
+    if doc:
+        plinth = await page.evaluate("(element) => element.innerText", doc)
+        plinth = plinth.replace("\t", " ")
+        broken = plinth.split("\n")
+        bg_dict = {}
+        for item in broken[0:len(broken)-1]:
+            print(str(item))
+            item = item.split(" ")
+            i = 0
+            name = item[i]
+            i += 1
+            while True:
+                if item[i] in ["SCAG", "RoD", "PHB", "EE", "PS:A", "PS:In", "CoS", "ToA"]:
+                    i += 1
+                    break
+                name += " " + item[i]
+                i += 1
+            if item[i] == "(AL":
+                i += 2
+            skill = ""
+            counter = 0
+            while True:
+                skill += " " + item[i]
+                if item[i][len(item[i])-1] in [")", ","]:
+                    counter += 1
+                if counter == 2:
+                    break
+                i += 1
+            i += 1
+            language = item[i]
+            i += 1
+            if language == "Any":
+                for j in range(1, int(item[i][len(item[i])-1])):
+                    language += " Any"
+            i += 1
+            tool = ""
+            try:
+                while item[i]:
+                    tool += " " + item[i]
+                    i += 1
+            except IndexError:
+                pass
+            print(name)
+            print(skill)
+            print(language)
+            print(tool)
+            bg = {'name': name, 'skill': skill, 'languages': language, 'tool': tool}
+            bg_dict[name] = bg
+        print(bg_dict)
+    else:
+        print("not working")
+
+
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    # loop.run_until_complete(scrape_spell())
+    loop.run_until_complete(scrape_background())
